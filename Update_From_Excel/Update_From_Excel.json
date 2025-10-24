@@ -1,0 +1,449 @@
+{
+  "name": "Update_From_Excel",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "authentication": "serviceAccount",
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "1P01KnYTr0mYiVXBgu79nRKBnMN5oNpNM",
+          "mode": "list",
+          "cachedResultName": "Отчёт мастера",
+          "cachedResultUrl": ""
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        -880,
+        32
+      ],
+      "id": "4737f460-e4eb-41d3-b889-00c9851317c4",
+      "name": "Google Drive Trigger",
+      "credentials": {
+        "googleApi": {
+          "id": "",
+          "name": ""
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.webViewLink }}",
+          "mode": "url"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -592,
+        -64
+      ],
+      "id": "6cc017d7-ecf1-4942-aefa-f9950d008d5b",
+      "name": "Download file",
+      "credentials": {
+        "googleApi": {
+          "id": "",
+          "name": ""
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "name",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -336,
+        -64
+      ],
+      "id": "6a288175-e047-4c04-8d68-976be018ecfc",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "resource": "worksheet",
+        "operation": "update",
+        "workbook": {
+          "__rl": true,
+          "value": "AE5B8E26FA417338!s66c8b191695e44cdabb21273b19070c0",
+          "mode": "list",
+          "cachedResultName": "Эффективность заготовки",
+          "cachedResultUrl": ""
+        },
+        "worksheet": {
+          "__rl": true,
+          "value": "={{ $('Code => sheet[name, id]').first().json.id }}",
+          "mode": "id"
+        },
+        "columnToMatchOn": "ФИО оператора",
+        "valueToMatchOn": "={{ $json[\"Оператор\"] }}",
+        "fieldsUi": {
+          "values": [
+            {
+              "column": "заготовка (треллевка) (погрузка) (м3)",
+              "fieldValue": "={{ $json[\"Значение\"] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.microsoftExcel",
+      "typeVersion": 2.1,
+      "position": [
+        1152,
+        -144
+      ],
+      "id": "8ef86846-48ee-4409-bec6-acb2e1e28e31",
+      "name": "Update sheet",
+      "alwaysOutputData": true,
+      "credentials": {
+        "microsoftExcelOAuth2Api": {
+          "id": "7frKAWNqv8MRLd4w",
+          "name": "lapin@scanica.ru"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nif (items.length === 0) {\n  return [];\n}\n\ntry {\n  // Берём только первый элемент\n  let raw = items[0].json.content;\n  if (!raw) throw new Error(\"Поле content отсутствует\");\n\n  // Очищаем от лишних пробелов и переносов строк\n  raw = raw.trim().replace(/\\r?\\n|\\r/g, '');\n\n  // Парсим JSON из строки\n  const obj = JSON.parse(raw);\n\n  // Возвращаем результат с нужными полями\n  return [{\n    json: {\n      workbook_file: obj.workbook_file,\n      workbook_id: obj.workbook_id,\n      sheet_found: obj.sheet_found,\n      id: obj.id,\n      status: obj.status\n    }\n  }];\n} catch (e) {\n  // В случае ошибки возвращаем описание ошибки и исходный content\n  return [{\n    json: {\n      error: `Ошибка парсинга JSON: ${e.message}`,\n      raw_content: items[0].json.content\n    }\n  }];\n}\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        704,
+        80
+      ],
+      "id": "d8d0ef99-20bf-470d-87a0-d05630cbcd3a",
+      "name": "Code => sheet[name, id]"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f75f4ca2-6608-4370-8aef-79cfb11a45e2",
+              "name": "content",
+              "value": "={{ $json.message.content }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        480,
+        80
+      ],
+      "id": "0e576c16-030c-4846-8b97-26c791a6f2bc",
+      "name": "Content Extraction"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-3.5-turbo",
+          "mode": "list",
+          "cachedResultName": "GPT-3.5-TURBO"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Ты — цифровой ассистент для работы с Microsoft Excel.\nТвоя задача: найти нужный лист в файле Excel (Workbook), используя список всех листов, который приходит в формате ниже.\n\nВходные данные:\n\n1. Список всех листов из Workbook, полученный через узел Code:\n{{ JSON.stringify($json.sheets) }}\nЭто массив названий листов, например:\n[\n  \"ДЕКАБРЬ 2019\",\n  \"ЯНВАРЬ 2020\",\n  \"июль 2025\",\n  ...\n]\n\n2. Точное название файла Excel (Workbook) из предыдущего шага:\n\"source_workbook_found\": {{ $json.name }}\nНапример:\n\"source_workbook_found\": \"отчет мастера январь 2020.xlsx\"\n\nТвоя задача:\n- Из названия файла Excel выделить часть, указывающую месяц и год (например, \"январь 2020\").\n- Найти этот месяц и год среди всех названий листов (ищи по подстроке, игнорируй регистр, пробелы, тире и кавычки).\n- Если лист найден в списке, выведи его название с изначальным регисторм.\n- Если не найден, выведи ошибку с текстом \"Ошибка: лист с таким названием не найден\" и верни весь список доступных листов.\n\nРезультат выдай строго в формате JSON:\n{\n  \"workbook_file\": Excel файл, который находится в {{ $json.choices[0].message.content.source_workbook_found }},\n  \"sheet_found\": \"<название найденного листа или null>\",\n  \"id\": \"<id найденного листа>\"\n  \"status\": \"success\" или \"error\"\n}\n\nПример для проверки:\nЕсли source_workbook_found = \"отчет мастера январь 2020.xlsx\"\nИ в списке есть \"январь 2020\", то результат:\n{\n  \"workbook_file\": \"отчет мастера январь 2020.xlsx\",\n  \"sheet_found\": \"ЯНВАРЬ 2020\",\n  \"id\": \"{00000000-0001-0000-0100-000000000000}\",\n  \"status\": \"success\"\n}\nЕсли нет такого листа, то:\n{\n  \"workbook_file\": \"отчет мастера январь 2020.xlsx\",\n  \"sheet_found\": null,\n  \"id\": null,\n  \"status\": \"error\"\n}\n\nНикогда не выдумывай названия листов и не изменяй существующие. Просто ищи по подстроке, если полностью не совпадает — ищи приближенное совпадение по месяцу и году.\n",
+              "role": "assistant"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        160,
+        80
+      ],
+      "id": "5d527cd3-6e3a-4034-85c5-fe7823538a8c",
+      "name": "Find Relevant sheet. Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": ""
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst sheets = items.map(item => ({\n  id: item.json.id,\n  name: item.json.name,\n}));\n\nreturn { sheets };\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -336,
+        176
+      ],
+      "id": "132dcb03-c41a-4791-8eb1-ca2d47cbee2e",
+      "name": "Code sheets[id, name]"
+    },
+    {
+      "parameters": {
+        "resource": "worksheet",
+        "workbook": {
+          "__rl": true,
+          "value": "AE5B8E26FA417338!s66c8b191695e44cdabb21273b19070c0",
+          "mode": "list",
+          "cachedResultName": "Эффективность заготовки",
+          "cachedResultUrl": ""
+        },
+        "returnAll": true,
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.microsoftExcel",
+      "typeVersion": 2.1,
+      "position": [
+        -608,
+        176
+      ],
+      "id": "4be35a1e-8188-4f14-8760-b0957ad4ab44",
+      "name": "Get sheets from target workbook",
+      "credentials": {
+        "microsoftExcelOAuth2Api": {
+          "id": "",
+          "name": ""
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -32,
+        80
+      ],
+      "id": "c42c6837-7db8-46fe-bba2-e26ab3cac5d8",
+      "name": "Merge (sheets + OpenAI output)"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        912,
+        -144
+      ],
+      "id": "c44fd59a-c028-4b2b-ae44-c3852aae564f",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Выполнять в режиме \"Run Once for All Items\"\nconst items = $input.all();\n\n// Хелпер: получить первое найденное значение по префиксу ключа без учёта суффиксов\nfunction getFirstByPrefix(obj, baseKey) {\n  const re = new RegExp(`^${baseKey}(?:_\\\\d+)?$`, 'i');\n  for (const key of Object.keys(obj)) {\n    if (re.test(key)) return obj[key];\n  }\n  return undefined;\n}\n\n// Хелпер: формирование \"Фамилия И\" из строки ФИО\nfunction formatOperatorShort(fullName) {\n  if (typeof fullName !== 'string') return undefined;\n  // Убираем лишние пробелы и разбиваем\n  const parts = fullName.trim().split(/\\s+/);\n  if (parts.length < 2) return fullName; // если не похоже на ФИО, возвращаем как есть\n  const last = parts[0];\n  const first = parts[1];\n  const initial = first ? first[0] : '';\n  return `${last} ${initial}`;\n}\n\nconst out = [];\n\nfor (const item of items) {\n  const src = item.json || {};\n  const operatorFull = src['Оператор'];\n\n  // Берём значение по Заготовке; если нет — по Трелёвке\n  let value = getFirstByPrefix(src, 'Заготовка');\n  if (value === undefined) {\n    value = getFirstByPrefix(src, 'Объем трелевки, м3');\n  }\n\n  // Если нет оператора или нет ни одной метрики — пропускаем элемент\n  if (!operatorFull || value === undefined) continue;\n\n  // Нормализуем числовое значение\n  let numeric = value;\n  if (typeof value === 'string') {\n    const m = value.replace(',', '.').match(/\\d+(?:\\.\\d+)?/);\n    numeric = m ? Number(m[0]) : undefined;\n  } else if (typeof value === 'number') {\n    numeric = value;\n  }\n\n  // Форматируем оператора как \"Фамилия И\"\n  const operatorShort = formatOperatorShort(operatorFull);\n\n  out.push({\n    json: {\n      Оператор: operatorShort,\n      Значение: numeric,\n    },\n  });\n}\n\nreturn out;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        192,
+        -256
+      ],
+      "id": "52de23c4-9163-44cb-8f5b-533c607fcc73",
+      "name": "Parsing data from source table"
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        -256
+      ],
+      "id": "5ab571b4-91c0-42f0-8396-9ba2b36808b9",
+      "name": "Extract from source file"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Drive Trigger": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get sheets from target workbook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Extract from source file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Merge (sheets + OpenAI output)",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Update sheet": {
+      "main": [
+        []
+      ]
+    },
+    "Code => sheet[name, id]": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Content Extraction": {
+      "main": [
+        [
+          {
+            "node": "Code => sheet[name, id]",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Relevant sheet. Message a model": {
+      "main": [
+        [
+          {
+            "node": "Content Extraction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code sheets[id, name]": {
+      "main": [
+        [
+          {
+            "node": "Merge (sheets + OpenAI output)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get sheets from target workbook": {
+      "main": [
+        [
+          {
+            "node": "Code sheets[id, name]",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge (sheets + OpenAI output)": {
+      "main": [
+        [
+          {
+            "node": "Find Relevant sheet. Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Update sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parsing data from source table": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from source file": {
+      "main": [
+        [
+          {
+            "node": "Parsing data from source table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "436ba457-0de7-4a32-9bab-ba513095ec10",
+  "meta": {
+    "instanceId": "5db09d27a6f1774765def08cd71f12cc3a0a65d0a308fdeb16024b3d6025b9bd"
+  },
+  "id": "9Ry0curOr4PBWN21",
+  "tags": []
+}
