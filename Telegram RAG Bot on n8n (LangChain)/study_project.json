@@ -1,0 +1,937 @@
+{
+  "name": "study project",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -448,
+        -64
+      ],
+      "id": "9077ab2f-46ac-4db1-bd88-f0bd54651c22",
+      "name": "Telegram Trigger",
+      "credentials": {},
+      "webhookId": ""
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "Отправьте файл для индексации в векторном хранилище",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        752,
+        -160
+      ],
+      "id": "2a0bbdaf-872e-4420-ad38-f566a2760b1e",
+      "name": "Send a text to get file",
+      "credentials": {},
+      "webhookId": ""
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "8a25a5b9-1ea3-4acf-a67b-59e3e9fb13c8",
+              "leftValue": "={{ $json.message.text }}",
+              "rightValue": "/index",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "6972dc62-e412-41ce-9dca-33cb240f8eb6",
+              "leftValue": "={{ $json.message.text }}",
+              "rightValue": "/ask",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -208,
+        -64
+      ],
+      "id": "7d0843f9-3927-433c-86ff-dee28eacc50c",
+      "name": "If",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "let globalData = $getWorkflowStaticData('global');\nlet state = \"none\"; \n\nif (globalData && globalData.telegramStates) {\n  let chatData = globalData.telegramStates[$input.first().json.message.chat.id];\n  if (chatData) {\n    if (chatData.waitingForIndex === true) {\n      state = \"waitingForIndex\";\n      globalData.telegramStates[$input.first().json.message.chat.id.toString()] = { waitingForIndex: false }\n    } else if (chatData.waitingForAnswer === true) {\n      state = \"waitingForAnswer\";\n      globalData.telegramStates[$input.first().json.message.chat.id.toString()] = { waitingForAnswer: false }\n    } \n  }\n}\n\nfor (const item of $input.all()) {\n  state = \"waitingForIndex\";\n  item.json.commad = state;\n}\n\nreturn $input.all();\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        96,
+        496
+      ],
+      "id": "4e173211-c9c5-4c40-9e5d-8bb9648d19bd",
+      "name": "Set command"
+    },
+    {
+      "parameters": {
+        "jsCode": "let workflowstatic = $getWorkflowStaticData('global');\n\nif (!workflowstatic.telegramStates) {\n  workflowstatic.telegramStates = {};\n}\n\nworkflowstatic.telegramStates[$input.first().json.message.chat.id.toString()] = { waitingForIndex: true }\n  return $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        -160
+      ],
+      "id": "379d0bcb-58f8-4a23-b29f-1eed2edb7f19",
+      "name": "Set value for Index"
+    },
+    {
+      "parameters": {
+        "jsCode": "let workflowstatic = $getWorkflowStaticData('global');\n\nif (!workflowstatic.telegramStates) {\n  workflowstatic.telegramStates = {};\n}\n\nworkflowstatic.telegramStates[$input.first().json.message.chat.id.toString()] = { waitingForAnswer: true }\n  return $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        32
+      ],
+      "id": "aeb78e1c-36d3-41c3-8b76-a7a8fe6751db",
+      "name": "Set value for Ask"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "Какой вопрос вас интересует?",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        752,
+        32
+      ],
+      "id": "79b1ac38-aa79-4bba-9b13-80b94d401c16",
+      "name": "Send a text to get ask",
+      "credentials": {},
+      "webhookId": ""
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.document.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        624,
+        352
+      ],
+      "id": "41f19e8d-50ae-4bde-89fe-565c90730ca5",
+      "name": "Get a file",
+      "credentials": {},
+      "webhookId": ""
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "memoryKey": {
+          "__rl": true,
+          "value": "vector_store_key",
+          "mode": "list",
+          "cachedResultName": "vector_store_key"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        1408,
+        288
+      ],
+      "id": "705f6516-4681-4283-9647-b0b79b04e059",
+      "name": "Simple Vector Store"
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "title",
+                "value": "={{ $('Combining into one input').item.json.message.document.file_name }}"
+              },
+              {
+                "name": "who_add",
+                "value": "={{ $('Combining into one input').item.json.message.from.username }}"
+              },
+              {
+                "name": "type",
+                "value": "={{ $('Combining into one input').item.json.message.document.mime_type }}"
+              },
+              {
+                "name": "chat_id",
+                "value": "={{ $('Combining into one input').item.json.message.chat.id }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        1584,
+        464
+      ],
+      "id": "404914c3-fc47-49cf-ac17-87dcb21eb408",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1392,
+        464
+      ],
+      "id": "ce8f12ab-42a1-4b05-aa98-1ebaf37cc187",
+      "name": "Embeddings OpenAI",
+      "credentials": {}
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        928,
+        432
+      ],
+      "id": "4411233a-4d0e-4f5b-b689-a0f59cf43983",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.metadata.chat_id }}",
+        "text": "=Файл  \"{{ $json.metadata.title }}\" был успешно добавлен в векторное хранилище",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1792,
+        288
+      ],
+      "id": "c76ed43f-4de7-4cef-ada1-651a2a04759c",
+      "name": "Notification of successful file addition",
+      "executeOnce": true,
+      "credentials": {},
+      "webhookId": ""
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst combinedData = items.reduce(\n  (acc, item) => {\n    const { json, binary } = item;\n    acc.json = { ...acc.json, ...json };\n    acc.binary = { ...acc.binary, ...binary };\n    return acc;\n  },\n  { json: {}, binary: {} },\n);\n\nreturn [combinedData];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1152,
+        336
+      ],
+      "id": "1784087b-243b-4f38-91da-3d0c13d310a5",
+      "name": "Combining into one input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "0d0e104d-2e00-4769-9583-da0aa99e9fe8",
+              "leftValue": "={{ $json.message.text }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        928,
+        736
+      ],
+      "id": "61cad3cf-ae80-4e94-a98d-157dc39cc9a1",
+      "name": "If text empty"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.retrieverVectorStore",
+      "typeVersion": 1,
+      "position": [
+        1504,
+        1056
+      ],
+      "id": "fb1fa53c-1549-413f-a80e-9df47d322c55",
+      "name": "Vector Store Retriever"
+    },
+    {
+      "parameters": {
+        "memoryKey": {
+          "__rl": true,
+          "mode": "list",
+          "value": "vector_store_key"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        1504,
+        1216
+      ],
+      "id": "f6eae618-27c3-4289-8f24-c39fd072bb35",
+        "name": "Simple Vector Store1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1616,
+        1344
+      ],
+      "id": "14304abc-a070-488b-bc86-22ce4d3dd19f",
+      "name": "Embeddings OpenAI1",
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "Ваш вопрос пустой",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1344,
+        720
+      ],
+      "id": "82bc7c7b-06d7-495c-a8fa-ba0102534954",
+      "name": "Notification of empty question",
+      "credentials": {},
+      "webhookId": ""
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "Взаимодействуйте через команды",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        624,
+        768
+      ],
+      "id": "e246518a-dc71-458e-b340-7cb4199f21d9",
+      "name": "Notification of absence of a command",
+      "credentials": {},
+      "webhookId": ""
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainRetrievalQa",
+      "typeVersion": 1.6,
+      "position": [
+        1360,
+        912
+      ],
+      "id": "cd8c7fd3-20aa-41a1-a6cb-6a79d292fa51",
+      "name": "Question and Answer Chain"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "chatgpt-4o-latest",
+          "mode": "list",
+          "cachedResultName": "chatgpt-4o-latest"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1328,
+        1088
+      ],
+      "id": "a6c9beac-ae63-4fa9-aae4-176c87d0d5ec",
+      "name": "OpenAI Chat Model",
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4368393c-0f55-4ff5-a787-4e778c2b3cef",
+              "name": "chatInput",
+              "value": "={{ $json.message.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1104,
+        912
+      ],
+      "id": "961dacbc-1e91-4ed7-b86b-6de98eff16ba",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('If text empty').item.json.message.from.id }}",
+        "text": "={{ $json.response }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1792,
+        912
+      ],
+      "id": "a3d4049f-519a-48d0-b235-f23c64c1fc3f",
+      "name": "Send a response",
+      "credentials": {},
+      "webhookId": ""
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "/index",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "2f5b0359-a0b7-44b1-bdab-5c19dde3943d"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "073e564b-79a0-4f4b-830a-307f93a97ba4",
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "/ask",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        64,
+        -64
+      ],
+      "id": "c7ebef2f-a8b0-4872-813f-eb8f90c61b68",
+      "name": "Switch command for clarify"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.commad }}",
+                    "rightValue": "waitingForIndex",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "7c5a06a3-131e-455a-bf62-ed0b32633aa2"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "3fabfecd-b19d-46e0-a75c-b288143d2d09",
+                    "leftValue": "={{ $json.commad }}",
+                    "rightValue": "waitingForAnswer",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "5c4d5449-5768-4e9b-a901-da7c67e53ed3",
+                    "leftValue": "={{ $json.commad }}",
+                    "rightValue": "none",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        384,
+        480
+      ],
+      "id": "91df0a3f-9350-47ef-b0bd-dc86da3bfbab",
+      "name": "Switch command for responce"
+    },
+    {
+      "parameters": {
+        "content": "## Start working with commands \n",
+        "height": 528,
+        "width": 832
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        304,
+        -336
+      ],
+      "id": "4ef02296-2648-4d35-9331-4b40443423c0",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Checking the value of a global variable about which command is being used\n",
+        "height": 464,
+        "width": 528,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -16,
+        320
+      ],
+      "id": "af32c195-c6c8-4d7b-ba25-011c23d19b70",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Indexing a file in vector storage",
+        "height": 368,
+        "width": 1408,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        544,
+        208
+      ],
+      "id": "3456f62a-2d76-4c9a-9332-67800e017e4b",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Response to a request based on data from vector storage",
+        "height": 944,
+        "width": 1216,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        848,
+        608
+      ],
+      "id": "64b0c829-6ca4-4e06-a9c2-2dff010681b1",
+      "name": "Sticky Note3"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text to get file": {
+      "main": [
+        []
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Switch command for clarify",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set value for Index": {
+      "main": [
+        [
+          {
+            "node": "Send a text to get file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set value for Ask": {
+      "main": [
+        [
+          {
+            "node": "Send a text to get ask",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set command": {
+      "main": [
+        [
+          {
+            "node": "Switch command for responce",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Simple Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Simple Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Combining into one input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Vector Store": {
+      "main": [
+        [
+          {
+            "node": "Notification of successful file addition",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combining into one input": {
+      "main": [
+        [
+          {
+            "node": "Simple Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If text empty": {
+      "main": [
+        [
+          {
+            "node": "Notification of empty question",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Vector Store1": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "Vector Store Retriever",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Simple Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vector Store Retriever": {
+      "ai_retriever": [
+        [
+          {
+            "node": "Question and Answer Chain",
+            "type": "ai_retriever",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Question and Answer Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Question and Answer Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Question and Answer Chain": {
+      "main": [
+        [
+          {
+            "node": "Send a response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch command for clarify": {
+      "main": [
+        [
+          {
+            "node": "Set value for Index",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set value for Ask",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch command for responce": {
+      "main": [
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "If text empty",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notification of absence of a command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "",
+  "meta": {},
+  "id": "study-project-clean",
+  "tags": []
+}
