@@ -1,0 +1,234 @@
+{
+  "name": "TG Post Formatter",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Преобразуй эту новость в пост для Telegram:\n{{ $json.content }}\n\n\nМаксимальная длина: {{ 1000 }} символов.\n",
+        "options": {
+          "systemMessage": "Ты — редактор новостного Telegram-канала. Ты умеешь писать захватывающие посты, тем самым привлекая подписчиков к прочтению материала.\n\nЗАДАЧА: Превратить сырую новость в информативный, немного провокационный, вызывающий, привлекательный пост для ТГ.\n\nТРЕБОВАНИЯ:\n- Длина: 600-1000 символов (строго!)\n- Используй релевантные эмодзи. Например (🧠, ⚡, 🚀, 📊, 🤖, 💡)\n- Структура: заголовок (1-2 предложения) + ключевые факты (2-3 маркера) и описание + вывод/мнение на этот счёт\n- Добавь подходящие хэштегы (минимум 3) (#AI #технологии #новости)\n- В конце укажи источник (если есть в тексте) с короткой ссылкой\n- Стиль: больше яркий фактов, провокационный стиль, выводы из новости, яркие файты Никаких markdown-блоков (```\n\nФОРМАТ:\n[Эмодзи] Заголовок. Описание. Мнение на этот счёт\n\n-  Факт 1\n-  Факт 2\n- Факты ....\n\nВывод.\n\n#хэштег1 #хэштег2 #хэштег3 ....\nИсточник: [название] — [url]\n\nВыведи пост для темы в JSON формате\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        256,
+        0
+      ],
+      "id": "0928c00f-b055-44ba-a65f-84f8c491fca3",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        256,
+        176
+      ],
+      "id": "73f4df61-adbf-4ab3-b847-4090135ea8eb",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": ""
+        }
+      }
+    },
+    {
+      "parameters": {
+        "inputSource": "jsonExample",
+        "jsonExample": "{\n  \"content\": {\n    \"topic\": \"\"\n  }\n}"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "20df858c-8ac2-4c24-b713-fac8c89b290a",
+      "name": "When Executed by Workflow Daily_News"
+    },
+    {
+      "parameters": {
+        "jsCode": "const firstItem = $input.first();\nlet text = firstItem.json.output || \"\";\n\nlet lenght = text.length\nconst textFrom22 = text.substring(21, lenght-7);\n\nreturn [{ json: { content: textFrom22 } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        608,
+        0
+      ],
+      "id": "bd82bd39-eadd-4103-ac61-0a7c8f2ef731",
+      "name": "Parse posts"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "Cwsvtw2Pnh1wkAMK",
+          "mode": "list",
+          "cachedResultName": "TG Generater Image"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "post": "={{ $json.content }}"
+          },
+          "matchingColumns": [
+            "post"
+          ],
+          "schema": [
+            {
+              "id": "post",
+              "displayName": "post",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        912,
+        -48
+      ],
+      "id": "b4a7540c-1d39-4a25-90ef-f5e5b702172b",
+      "name": "Execute Workflow"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1120,
+        160
+      ],
+      "id": "4bdacb2c-ee40-4229-a315-3c31b24ad0bb",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "content": "## Преобразование сырого текста в TG Пост",
+        "height": 480,
+        "width": 624,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        144,
+        -176
+      ],
+      "id": "fc7d4a21-97cb-4a73-a6b7-c09ae0035aa1",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Вызов workflow для создания подходящего изображения и склеивание с текстом поста",
+        "height": 480,
+        "width": 464,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        800,
+        -176
+      ],
+      "id": "8087c937-6402-4beb-a44e-9798c856ebd5",
+      "name": "Sticky Note1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Parse posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Workflow Daily_News": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse posts": {
+      "main": [
+        [
+          {
+            "node": "Execute Workflow",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Execute Workflow": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "5362b0fa-876b-4bbe-b202-8c25493a7488",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5db09d27a6f1774765def08cd71f12cc3a0a65d0a308fdeb16024b3d6025b9bd"
+  },
+  "id": "B0Q43DneWp9ieyQA",
+  "tags": []
+}

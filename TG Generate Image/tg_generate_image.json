@@ -1,0 +1,128 @@
+{
+  "name": "TG Generator Image",
+  "nodes": [
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4-turbo",
+          "mode": "list",
+          "cachedResultName": "GPT-4-TURBO"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Ты — специалист по созданию промптов для AI-генерации изображений.\n\nЗАДАЧА: Преобразуй текст новости {{ $json.post }} в короткий, визуальный промпт для DALL-E 3/Stable Diffusion.\n\nТРЕБОВАНИЯ:\n- Длина: 50-100 слов\n- Стиль: описательный, визуальный, вызывающий, немного провокционный\n- Фокус на ключевых элементах и атмосфере\n- Можно использовать текст в изображении\n- Профессиональное качество\n\nФОРМАТ: Верни только текст промпта, без пояснений. "
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [208, 0],
+      "id": "047076b8-b92d-4205-b781-33ebf8b0490f",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_OPENAI_CREDENTIAL_ID",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "prompt": "={{ $json.message.content }}",
+        "options": {
+          "dalleQuality": "standard",
+          "size": "1024x1024",
+          "style": "vivid",
+          "returnImageUrls": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [560, 0],
+      "id": "e910e208-83cd-4768-b8f2-fae3844fbe11",
+      "name": "Generate an image",
+      "retryOnFail": true,
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_OPENAI_CREDENTIAL_ID",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Формирование промпта для создания изображения",
+        "height": 272,
+        "width": 336,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [160, -128],
+      "id": "5eafe550-3b1a-4bc1-8683-01e13ce54e06",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Генерирование изображения исходя из промпта",
+        "height": 272,
+        "width": 272,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [528, -128],
+      "id": "8ff94914-fb99-4d50-8730-706029d5c190",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "inputSource": "jsonExample",
+        "jsonExample": "{\n  \"post\": \"\"\n}"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [0, 0],
+      "id": "cd82d2d9-4e80-406f-8720-6404d37aa648",
+      "name": "When Executed by TG Post Formater Workflow"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Generate an image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate an image": {
+      "main": [[]]
+    },
+    "When Executed by TG Post Formater Workflow": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}
